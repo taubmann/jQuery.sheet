@@ -10,11 +10,25 @@
  */
 
 (function($, doc) {
+	
+	
 	/**
 	 * @namespace
 	 * @memberOf jQuery.sheet
 	 */
 	jQuery.sheet.dts = {
+		/**
+		 * Create a Globally Unique Identifier
+		 * @returns GUID-String
+		 * @memberOf jQuery.sheet.dts
+		 */
+		guid: function() {
+			return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+				var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+				return v.toString(16);
+			});
+		},
+		
 		/**
 		 * @memberOf jQuery.sheet.dts
 		 * @namespace
@@ -80,6 +94,7 @@
 					spreadsheet = json[i];
 					var table = $(doc.createElement('table'));
 					if (spreadsheet['title']) table.attr('title', spreadsheet['title'] || '');
+					if (spreadsheet['id']) table.attr('data-id', spreadsheet['id']);
 
 					tables = tables.add(table);
 
@@ -97,9 +112,10 @@
 							column = columns[k];
 							var td = $(doc.createElement('td'))
 								.appendTo(tr);
-
+							
 							if (column['class']) td.attr('class', column['class'] || '');
 							if (column['style']) td.attr('style', column['style'] || '');
+							if (column['id']) td.attr('data-id', column['id']);//chris
 							if (column['formula']) td.attr('data-formula', (column['formula'] ? '=' + column['formula'] : ''));
 							if (column['cellType']) td.attr('data-celltype', column['cellType'] || '');
 							if (column['value']) td.html(column['value'] || '');
@@ -199,7 +215,9 @@
 
 				for (var i = 0; i < spreadsheets.length; i++) {
 					spreadsheet = spreadsheets[i];
-					var table = $(doc.createElement('table')).attr('title', (spreadsheet.attributes['title'] ? spreadsheet.attributes['title'].nodeValue : '')),
+					var table = $(doc.createElement('table'))
+						.attr('title', (spreadsheet.attributes['title'] ? spreadsheet.attributes['title'].nodeValue : ''))
+						.attr('data-id', (spreadsheet.attributes['id'] ? spreadsheet.attributes['id'].nodeValue : $.sheet.dts.guid())),
 						colgroup = $(doc.createElement('colgroup')).appendTo(table),
 						tbody = $(doc.createElement('tbody')).appendTo(table);
 
@@ -224,13 +242,15 @@
 							column = columns[m];
 							var td = $(doc.createElement('td')).appendTo(tr),
 								formula = column.getElementsByTagName('formula')[0],
+								id = column.getElementsByTagName('id')[0],
 								cellType = column.getElementsByTagName('cellType')[0],
 								value = column.getElementsByTagName('value')[0],
 								style = column.getElementsByTagName('style')[0],
 								cl = column.getElementsByTagName('class')[0]
 								rowspan = column.getElementsByTagName('rowspan')[0],
 								colspan = column.getElementsByTagName('colspan')[0];
-
+							
+							if (id) td.attr('data-id', '=' + (id.textContent || id.text));
 							if (formula) td.attr('data-formula', '=' + (formula.textContent || formula.text));
                             if (cellType) td.attr('data-celltype', cellType.textContent || cellType.text);
 							if (value) td.html(value.textContent || value.text);
@@ -315,6 +335,7 @@
 			 */
 			json: function(jS, doNotTrim) {
 				doNotTrim = (doNotTrim == undefined ? false : doNotTrim);
+				
 
 				var output = [],
 					i = 1 * jS.i,
@@ -341,6 +362,7 @@
 					jS.evt.cellEditDone();
 					jsonSpreadsheet = {
 						"title": (jS.obj.table().attr('title') || ''),
+						"id": (jS.obj.table().attr('data-id') || $.sheet.dts.guid()),
 						"rows": [],
 						"metadata": {
 							"widths": [],
@@ -383,11 +405,14 @@
 								if (!jsonRow["height"]) {
 									jsonRow["height"] = (parent.style['height'] ? parent.style['height'].replace('px' , '') : jS.s.colMargin);
 								}
-
+								
+								jsonColumn['id'] = attr['data-id'] ? attr['data-id'] : $.sheet.dts.guid();
+								
 								if (cell['formula']) jsonColumn['formula'] = cell['formula'];
                                 if (cell['cellType']) jsonColumn['cellType'] = cell['cellType'];
 								if (cell['value']) jsonColumn['value'] = cell['value'];
 								if (attr['style'] && attr['style'].value) jsonColumn['style'] = attr['style'].value;
+								
 
 								if (cl.length) {
 									jsonColumn['class'] = cl;
@@ -502,7 +527,8 @@
 								rowHasValues = true;
 
 								xmlColumn += '<column>';
-
+								
+								xmlColumn += '<id>' + (attr['data-id'] ? attr['data-id'] : $.sheet.dts.guid()) + '</id>';
 								if (cell.formula) xmlColumn += '<formula>' + cell.formula + '</formula>';
 								if (cell.cellType) xmlColumn += '<cellType>' + cell.cellType + '</cellType>';
 								if (cell.value) xmlColumn += '<value>' + cell.value + '</value>';
@@ -533,7 +559,7 @@
 						}
 
 					} while (row-- > 1);
-					xmlSpreadsheet = '<spreadsheet title="' + (jS.obj.table().attr('title') || '') + '">' +
+					xmlSpreadsheet = '<spreadsheet title="' + (jS.obj.table().attr('title') || '') + '" id="' + (jS.obj.table().attr('data-id') || $.sheet.dts.guid()) + '">' +
 						'<rows>' +
 							xmlRow +
 						'</rows>' +
