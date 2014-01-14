@@ -17,6 +17,7 @@
 	 * @memberOf jQuery.sheet
 	 */
 	jQuery.sheet.dts = {
+		
 		/**
 		 * Create a Globally Unique Identifier
 		 * @returns GUID-String
@@ -30,6 +31,7 @@
 		},
 		
 		/**
+		 * create HTML-Sheets from JSON/XML
 		 * @memberOf jQuery.sheet.dts
 		 * @namespace
 		 */
@@ -115,7 +117,7 @@
 							
 							if (column['class']) td.attr('class', column['class'] || '');
 							if (column['style']) td.attr('style', column['style'] || '');
-							if (column['id']) td.attr('data-id', column['id']);//chris
+							if (column['id']) td.attr('data-id', column['id']);
 							if (column['formula']) td.attr('data-formula', (column['formula'] ? '=' + column['formula'] : ''));
 							if (column['cellType']) td.attr('data-celltype', column['cellType'] || '');
 							if (column['value']) td.html(column['value'] || '');
@@ -216,9 +218,11 @@
 				for (var i = 0; i < spreadsheets.length; i++) {
 					spreadsheet = spreadsheets[i];
 					var table = $(doc.createElement('table'))
-						.attr('title', (spreadsheet.attributes['title'] ? spreadsheet.attributes['title'].nodeValue : ''))
-						.attr('data-id', (spreadsheet.attributes['id'] ? spreadsheet.attributes['id'].nodeValue : $.sheet.dts.guid())),
-						colgroup = $(doc.createElement('colgroup')).appendTo(table),
+						.attr('title', (spreadsheet.attributes['title'] ? spreadsheet.attributes['title'].nodeValue : ''));
+					
+					if (spreadsheet.attributes['id']) table.attr('data-id', spreadsheet.attributes['id'].nodeValue);
+					
+					var colgroup = $(doc.createElement('colgroup')).appendTo(table),
 						tbody = $(doc.createElement('tbody')).appendTo(table);
 
 					tables = tables.add(table);
@@ -286,12 +290,13 @@
 		},
 
 		/**
+		 * create JSON/XML from HTML-Tables
 		 * @namespace
 		 * @memberOf jQuery.sheet.dts
 		 */
 		fromTables: {
 			/**
-			 * Create a table from json
+			 * Create JS-Array from the tables
 			 * @param {Object} jS required, the jQuery.sheet instance
 			 * @param {Boolean} [doNotTrim] cut down on added json by trimming to only edited area
 			 * @returns {Array}  - schema:<pre>
@@ -333,10 +338,11 @@
 			 * }]</pre>
 			 * @memberOf jQuery.sheet.dts.fromTables
 			 */
-			json: function(jS, doNotTrim) {
-				doNotTrim = (doNotTrim == undefined ? false : doNotTrim);
+			json: function(jS, doNotTrim, setGUID) {
 				
-
+				doNotTrim = (doNotTrim == undefined ? false : doNotTrim);
+				setGUID = (setGUID == undefined ? false : setGUID);
+				
 				var output = [],
 					i = 1 * jS.i,
 					sheet = jS.spreadsheets.length - 1,
@@ -362,7 +368,7 @@
 					jS.evt.cellEditDone();
 					jsonSpreadsheet = {
 						"title": (jS.obj.table().attr('title') || ''),
-						"id": (jS.obj.table().attr('data-id') || $.sheet.dts.guid()),
+						"id": (setGUID ? (jS.obj.table().attr('data-id') || $.sheet.dts.guid()) : ''),
 						"rows": [],
 						"metadata": {
 							"widths": [],
@@ -406,7 +412,7 @@
 									jsonRow["height"] = (parent.style['height'] ? parent.style['height'].replace('px' , '') : jS.s.colMargin);
 								}
 								
-								jsonColumn['id'] = attr['data-id'] ? attr['data-id'] : $.sheet.dts.guid();
+								if (setGUID) jsonColumn['id'] = attr['data-id'] ? attr['data-id'] : $.sheet.dts.guid();
 								
 								if (cell['formula']) jsonColumn['formula'] = cell['formula'];
                                 if (cell['cellType']) jsonColumn['cellType'] = cell['cellType'];
@@ -438,7 +444,7 @@
 			},
 
 			/**
-			 * Create a table from xml
+			 * Create xml from the tables
 			 * @param {Object} jS the jQuery.sheet instance
 			 * @param {Boolean} [doNotTrim] cut down on added json by trimming to only edited area
 			 * @returns {String} - schema:<textarea disabled=disabled>
@@ -478,8 +484,11 @@
 			 * </spreadsheets></textarea>
 			 * @memberOf jQuery.sheet.dts.fromTables
 			 */
-			xml: function(jS, doNotTrim) {
+			xml: function(jS, doNotTrim, setGUID) {
+				
 				doNotTrim = (doNotTrim == undefined ? false : doNotTrim);
+				setGUID = (setGUID == undefined ? false : setGUID);
+				
 				var output = '',
 					i = 1 * jS.i,
 					sheet = jS.spreadsheets.length - 1,
@@ -528,7 +537,7 @@
 
 								xmlColumn += '<column>';
 								
-								xmlColumn += '<id>' + (attr['data-id'] ? attr['data-id'] : $.sheet.dts.guid()) + '</id>';
+								if (setGUID) xmlColumn += '<id>' + (attr['data-id'] ? attr['data-id'] : $.sheet.dts.guid()) + '</id>';
 								if (cell.formula) xmlColumn += '<formula>' + cell.formula + '</formula>';
 								if (cell.cellType) xmlColumn += '<cellType>' + cell.cellType + '</cellType>';
 								if (cell.value) xmlColumn += '<value>' + cell.value + '</value>';
@@ -559,7 +568,9 @@
 						}
 
 					} while (row-- > 1);
-					xmlSpreadsheet = '<spreadsheet title="' + (jS.obj.table().attr('title') || '') + '" id="' + (jS.obj.table().attr('data-id') || $.sheet.dts.guid()) + '">' +
+					xmlSpreadsheet = 	'<spreadsheet title="' + (jS.obj.table().attr('title') || '') + '"' +
+										(setGUID ? ' id="' + (jS.obj.table().attr('data-id') || $.sheet.dts.guid()) + '"' : '') +
+										'>' +
 						'<rows>' +
 							xmlRow +
 						'</rows>' +
