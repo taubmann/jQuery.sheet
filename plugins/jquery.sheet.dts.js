@@ -123,6 +123,7 @@
 							if (column['value']) td.html(column['value'] || '');
 							if (column['rowspan']) td.attr('rowspan', column['rowspan'] || '');
 							if (column['colspan']) td.attr('colspan', column['colspan'] || '');
+							if (column['comment']) td.attr('data-comment', column['comment']);
 						}
 					}
 
@@ -252,9 +253,10 @@
 								style = column.getElementsByTagName('style')[0],
 								cl = column.getElementsByTagName('class')[0]
 								rowspan = column.getElementsByTagName('rowspan')[0],
-								colspan = column.getElementsByTagName('colspan')[0];
+								colspan = column.getElementsByTagName('colspan')[0],
+								comment = column.getElementsByTagName('comment')[0];
 							
-							if (id) td.attr('data-id', '=' + (id.textContent || id.text));
+							if (id) td.attr('data-id', (id.textContent || id.text));
 							if (formula) td.attr('data-formula', '=' + (formula.textContent || formula.text));
                             if (cellType) td.attr('data-celltype', cellType.textContent || cellType.text);
 							if (value) td.html(value.textContent || value.text);
@@ -262,6 +264,8 @@
 							if (cl) td.attr('class', cl.textContent || cl.text);
 							if (rowspan) td.attr('rowspan', rowspan.textContent || rowspan.text);
 							if (colspan) td.attr('colspan', colspan.textContent || colspan.text);
+							if (comment) td.attr('data-comment', comment.textContent || comment.text);
+							
 						}
 					}
 
@@ -411,20 +415,25 @@
 								if (!jsonRow["height"]) {
 									jsonRow["height"] = (parent.style['height'] ? parent.style['height'].replace('px' , '') : jS.s.colMargin);
 								}
-								
+								// set/create the GUID
 								if (setGUID) jsonColumn['id'] = attr['data-id'] ? attr['data-id'] : $.sheet.dts.guid();
+								
+								
 								
 								if (cell['formula']) jsonColumn['formula'] = cell['formula'];
                                 if (cell['cellType']) jsonColumn['cellType'] = cell['cellType'];
 								if (cell['value']) jsonColumn['value'] = cell['value'];
 								if (attr['style'] && attr['style'].value) jsonColumn['style'] = attr['style'].value;
 								
-
 								if (cl.length) {
 									jsonColumn['class'] = cl;
 								}
 								if (attr['rowspan']) jsonColumn['rowspan'] = attr['rowspan'].value;
 								if (attr['colspan']) jsonColumn['colspan'] = attr['colspan'].value;
+								
+								// save the cell-comment if available
+								if(attr['data-comment']) jsonColumn['comment'] = attr['data-comment'].value;
+								
 							}
 
 							if (row * 1 == 1) {
@@ -538,6 +547,7 @@
 								xmlColumn += '<column>';
 								
 								if (setGUID) xmlColumn += '<id>' + (attr['data-id'] ? attr['data-id'] : $.sheet.dts.guid()) + '</id>';
+								
 								if (cell.formula) xmlColumn += '<formula>' + cell.formula + '</formula>';
 								if (cell.cellType) xmlColumn += '<cellType>' + cell.cellType + '</cellType>';
 								if (cell.value) xmlColumn += '<value>' + cell.value + '</value>';
@@ -545,7 +555,10 @@
 								if (cl) xmlColumn += '<class>' + cl + '</class>';
 								if (attr['rowspan']) xmlColumn += '<rowspan>' + attr['rowspan'].value + '</rowspan>';
 								if (attr['colspan']) xmlColumn += '<colspan>' + attr['colspan'].value + '</colspan>';
-
+								
+								// save the cell-comment if available
+								if (attr['data-comment']) xmlColumn += '<comment>' + attr['data-comment'].value + '</comment>';
+								
 								xmlColumn += '</column>';
 
 								xmlColumns = xmlColumn + xmlColumns;
